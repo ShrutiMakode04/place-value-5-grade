@@ -1,0 +1,600 @@
+Product Requirements Document (PRD)
+Equal Groups — Introduction to Multiplication & Division | Grade 1 Math
+Intellia SG | Singapore Primary Mathematics Curriculum (MOE)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+1. EXECUTIVE SUMMARY
+
+This document defines product requirements for the "Equal Groups — Introduction
+to Multiplication and Division" interactive lesson module, delivered as Lesson 4.1
+within Intellia SG's Grade 1 Math program. The module targets Singapore Primary 1
+students aged 6–7 and introduces the foundational concept of equal groups as the
+concrete and pictorial gateway to multiplication and division thinking, fully aligned
+with the Singapore MOE Mathematics Framework and the Primary 1 Targeting
+Mathematics syllabus.
+
+The product is a standalone web page to be hosted at:
+  https://intelliasg.com/courses/grade-1-math/lessons/equal-groups/
+
+It is built using React (Vite + JSX, JavaScript/CSS) and designed to strictly mirror
+the visual and UX structure established at https://numberbound.vercel.app/ and the
+repository https://github.com/dsamyak/numberbound.
+
+Audio narration uses ElevenLabs exclusively (Voice: Alice, Voice ID: Xb7hH8MSUJpSbSDYk0k2,
+Model: eleven_multilingual_v2) with pre-generated static .mp3 files for all phase
+narrations and dynamic generation for practice questions — matching the pipeline
+documented in the Word Problems Using Addition Audio & Narration Pipeline.
+
+The module follows Intellia's 5-phase learner journey:
+
+  Phase 1 — INTRO      → Welcome screen + 5-phase progress map
+  Phase 2 — WONDER     → Curiosity hook
+  Phase 3 — STORY      → Narrative-based concept introduction
+  Phase 4 — SIMULATE   → Sandbox-style interactive simulation (3 stations)
+  Phase 5 — PLAY       → IntelliPlay™ gamified practice (100 randomised questions)
+  Phase 6 — REFLECT    → Journal / LearnFlow AI prompt + completion badge
+
+═══════════════════════════════════════════════════════════════════════════════
+
+2. PRODUCT VISION & GOALS
+
+Vision
+To make the concept of equal groups intuitive, visual, and joyful for 6–7 year old
+Singapore learners — building a concrete-pictorial-abstract (CPA) bridge toward
+multiplication and division thinking through animated grouping simulations, story
+narration, and adaptive gamified challenge.
+
+Goals
+
+  Goal                         | Metric
+  -----------------------------|--------------------------------------------------
+  Learning Completion          | ≥85% of students complete all 5 phases
+  Practice Engagement          | ≥90% attempt at least 10 practice questions
+  Score Achievement            | Average challenge score ≥75% on first attempt
+  Session Duration             | Average engagement ≥15 minutes per session
+  Curriculum Alignment         | 100% aligned to Singapore MOE Primary 1 (Lesson 4.1)
+  Phase Progression            | ≥80% reach Play phase in a single session
+  Simulation Interaction Rate  | ≥95% attempt all 3 simulation stations
+
+═══════════════════════════════════════════════════════════════════════════════
+
+3. TARGET USERS
+
+Primary: Grade 1 Students (Age 6–7)
+  - Limited reading ability; prefer visual diagrams, animation, colour
+  - Learn concretely first (C → P → A: Concrete-Pictorial-Abstract)
+  - Short attention spans; need frequent micro-rewards and mascot feedback
+  - Singapore context: familiar with hawker food, local names, school objects
+
+Secondary: Parents & Teachers
+  - Assign as classwork or enrichment homework
+  - Expect strict MOE curriculum alignment
+  - Monitor via phase completion indicators embedded in lesson page
+
+═══════════════════════════════════════════════════════════════════════════════
+
+4. CURRICULUM ALIGNMENT — Singapore MOE Primary 1
+
+Topic:        Equal Groups (Lesson 4.1)
+Programme:    Intellia SG Grade 1 Math — Section 4: Introduction to Multiplication and Division
+Lesson URL:   https://intelliasg.com/courses/grade-1-math/lessons/equal-groups/
+
+Source References:
+  - Singapore MOE Primary Mathematics Syllabus (Primary 1–6), 2013 (Revised)
+    → Strand: Number and Algebra
+    → Sub-strand: Multiplication and Division
+    → Primary 1 anchor: "Equal groups" as a precursor to multiplication
+  - Targeting Mathematics Primary 1B (Casco Publications)
+    → Chapter on Introduction to Multiplication: Equal Groups, Repeated Addition
+  - My Pals Are Here! Maths Primary 1B (Marshall Cavendish)
+    → Unit 14: Multiplication — Making Equal Groups
+
+MOE Learning Objectives Covered (Lesson 4.1):
+
+  LO1  Recognise and describe equal groups (same number in each group)
+  LO2  Count the total number of objects in equal groups by repeated counting
+  LO3  Represent equal groups using pictures and diagrams
+  LO4  Connect equal groups to repeated addition (e.g. 3 groups of 4 = 4+4+4)
+  LO5  Describe sharing a set of objects equally into groups (fair sharing / division concept)
+  LO6  Use language: "groups of", "equal groups", "each group has", "how many altogether"
+  LO7  Solve simple picture-based word problems involving equal groups
+
+Singapore Syllabus CPA Progression for This Lesson:
+
+  Concrete    → Physical counters/objects arranged into equal groups (simulated digitally)
+  Pictorial   → Diagrams of grouped objects, dot arrays, equal-group cards
+  Abstract    → "3 groups of 4 = ___"; connecting to repeated addition 4+4+4=12
+
+Number Ranges:
+  Easy:    Groups of 2, 3, 4, 5 (total ≤ 20)
+  Medium:  Groups of 2–6 (total ≤ 30)
+  Hard:    Groups of 2–9 (total ≤ 40); includes reverse (find groups or group size)
+
+Vocabulary Focus (age-appropriate):
+  "equal groups", "same number", "groups of", "each", "altogether",
+  "share equally", "how many in each group", "how many groups"
+
+═══════════════════════════════════════════════════════════════════════════════
+
+5. THE 5-PHASE LEARNER JOURNEY (Intellia Model)
+
+┌────────────────────────────────────────────────────────────────────────────┐
+│  INTRO SCREEN → Progress Map (5-step visual tracker, top bar)              │
+│  Welcome: "Hello! Today we're going to learn about Equal Groups! 🎉"       │
+│  Lesson badge shown (locked). 5 glowing phase dots visible.                │
+└────────────────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌────────────────────────────────────────────────────────────────────────────┐
+│  PHASE 1 — WONDER  (≈ 1–2 min)                                             │
+│                                                                            │
+│  Hook: "Mia has 12 strawberries 🍓. She wants to share them equally on     │
+│  plates. Can she do it? How many go on each plate?"                        │
+│                                                                            │
+│  Visual: Animated strawberries appearing one by one, Mia mascot confused   │
+│  Animation: Strawberries scatter, then form groups magically               │
+│  Narration (ElevenLabs): Alice voice reads the hook warmly                 │
+│  → Mascot (LearnFlow robot) appears with a thinking expression             │
+│  → "Let's find out what EQUAL GROUPS really means!"                       │
+└────────────────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌────────────────────────────────────────────────────────────────────────────┐
+│  PHASE 2 — STORY  (≈ 2–3 min)                                              │
+│                                                                            │
+│  Narrative: Wei Ming visits the hawker centre with his family.             │
+│  Panel 1: "There are 3 tables. Each table has 4 bowls of noodles. 🍜"     │
+│  Panel 2: "Every table gets the SAME number of bowls. That's EQUAL!"      │
+│  Panel 3: Number diagram appears — 3 circles, each containing 4 dots      │
+│  Panel 4: "3 groups of 4. Count them all: 4, 8, 12! Altogether = 12!"    │
+│  Panel 5: "Now Wei Ming's family shares 10 apples equally into 5 bags."   │
+│  Panel 6: "Each bag gets 2 apples. Fair sharing = equal groups! 🍎"       │
+│                                                                            │
+│  → Illustrated story panels (animated slide-in), ElevenLabs narration     │
+│  → Key vocabulary highlighted: "equal groups", "groups of", "altogether"  │
+│  → Number group diagram introduced visually (bubble clusters)              │
+└────────────────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌────────────────────────────────────────────────────────────────────────────┐
+│  PHASE 3 — SIMULATE  (≈ 5–6 min)                                           │
+│                                                                            │
+│  3 Interactive Stations — student must complete all 3 to advance          │
+│                                                                            │
+│  Station A — "The Grouping Table" (Concrete)                               │
+│    Drag objects into equal group circles. "Put 3 in each group!"          │
+│    Objects: cookies, stars, fish, flowers (themed per session)            │
+│                                                                            │
+│  Station B — "Spot the Equal Groups" (Pictorial)                           │
+│    Show 4 arrangements on screen. Student taps the ones that are EQUAL.  │
+│    Visual discrimination: some groups have unequal numbers.                │
+│                                                                            │
+│  Station C — "Fill the Sentence" (Abstract)                                │
+│    "___ groups of ___ = ___" — fill one blank using number pad            │
+│    Diagram shown as scaffold; abstract sentence completes the CPA loop.   │
+│                                                                            │
+│  → Mascot reacts to each completed station                                 │
+│  → ElevenLabs narrates each station instruction and feedback               │
+└────────────────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌────────────────────────────────────────────────────────────────────────────┐
+│  PHASE 4 — PLAY  (≈ 6–8 min)                                               │
+│                                                                            │
+│  IntelliPlay™ Level: 100 randomised questions across 10 worlds            │
+│  10 questions per world, world unlocks at ≥6/10 correct                  │
+│  Stars (1–3), XP, badges, and streak fire counter active                  │
+│  → Mastery gates the world map; encouragement-first feedback              │
+└────────────────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌────────────────────────────────────────────────────────────────────────────┐
+│  PHASE 5 — REFLECT  (≈ 1–2 min)                                            │
+│                                                                            │
+│  Journal prompt: "Can you draw equal groups and tell me what you made?"   │
+│  Or: LearnFlow AI chat — type/speak your understanding                    │
+│  Lesson complete badge unlocks here. Summary of XP + badges shown.       │
+│  → "Share with your teacher!" button (screenshot / export)               │
+└────────────────────────────────────────────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════════════════════════
+
+6. PHASE 3 — SIMULATION DESIGN (Detailed)
+
+6.1 Station A — The Grouping Table (Concrete)
+
+Visual:
+  - A cheerful table/mat area divided into 2–5 equal circles (group zones)
+  - A pool of draggable emoji objects on the left (stars, fish, cookies, etc.)
+  - "Put ___ in each group!" instruction narrated by Alice (ElevenLabs)
+
+Interaction:
+  - Student drags objects one at a time into each circle
+  - OR taps an object + taps destination circle (accessibility mode)
+  - Each circle shows a counter "0 / 3" updating as objects are placed
+  - A number group diagram (bubble visual) updates in real-time below
+
+Feedback:
+  - All groups equal → mascot dances, "Amazing! Every group has the same!" 🎉
+  - Unequal groups on submit → gentle shake + "One group has more! Let's fix it."
+
+Variants per round (randomised):
+  - Round 1: 2 groups of 3 (6 objects)
+  - Round 2: 3 groups of 4 (12 objects)
+  - Round 3: 4 groups of 2 (8 objects)
+  - Round 4: 5 groups of 3 (15 objects)
+
+6.2 Station B — Spot the Equal Groups (Pictorial)
+
+Visual:
+  - 4 arrangement cards displayed on screen (2×2 grid)
+  - Each card shows groups of emoji objects arranged in bubbles
+  - Some cards have EQUAL groups; some are deliberately unequal
+
+Interaction:
+  - Student taps the card(s) where all groups have equal counts
+  - Multi-select: correct cards glow green, wrong cards glow red on submit
+  - Diagrams are shown without numbers (pure visual discrimination)
+
+Teaching goal:
+  - Equal vs. unequal — building the core conceptual distinction
+  - Encourages careful visual counting without explicit arithmetic
+
+Distractor design:
+  - Unequal cards differ by ±1 in one group (plausible, not obvious)
+  - One card always has a larger but unequal arrangement (catches skimmers)
+
+3 rounds with increasing visual complexity:
+  - Round 1: 2-group arrangements (easy visual split)
+  - Round 2: 3-group arrangements (medium)
+  - Round 3: 4-group arrangements (hard — tests careful counting)
+
+6.3 Station C — Fill the Sentence (Abstract)
+
+Visual:
+  ___ groups of ___ = ___
+  (one blank highlighted for input; the other two values visible)
+
+Interaction:
+  - Number pad (large, tap-friendly, 0–9 displayed)
+  - Group diagram shown above as visual scaffold
+  - "Show diagram" hint button always visible
+  - On submit: correct → bounce animation; incorrect → shake + hint
+
+Variants (which blank is missing, rotated per round):
+  - Find total:    3 groups of 4 = ___
+  - Find group size: 2 groups of ___ = 10
+  - Find number of groups: ___ groups of 5 = 15
+
+ElevenLabs narrates each sentence aloud when displayed.
+
+═══════════════════════════════════════════════════════════════════════════════
+
+7. PHASE 4 — QUESTION BANK (100 Randomised Questions)
+
+7.1 Question Types (10 types × 10 questions = 100 total)
+
+  Type | Description                                        | Example
+  -----|----------------------------------------------------|-----------------------------------------
+  Q1   | Count equal groups — find total                   | 3 groups of 4. How many altogether?
+  Q2   | Equal group picture — tap correct answer          | [Picture] Which shows 2 groups of 5?
+  Q3   | Fill blank — find total                           | 4 groups of 3 = ___
+  Q4   | Fill blank — find group size                      | 5 groups of ___ = 20
+  Q5   | Fill blank — find number of groups                | ___ groups of 6 = 18
+  Q6   | Singapore word problem (multiplication sense)     | Priya puts 4 cupcakes on each plate. She has 3 plates. How many cupcakes?
+  Q7   | Singapore word problem (fair sharing / division)  | Ahmad has 12 mangoes. He shares them equally into 3 bags. How many in each bag?
+  Q8   | True or False — is this equal?                    | "4 groups of 3 = 10" — True or False?
+  Q9   | Spot the equal group arrangement (pictorial MCQ)  | Which picture shows equal groups? (4 choices)
+  Q10  | Repeated addition link                            | 5 + 5 + 5 = ___ groups of 5
+
+7.2 Question Distribution by Difficulty
+
+  Type | Count | Easy (within 20) | Medium (within 30) | Hard (within 40)
+  -----|-------|------------------|--------------------|------------------
+  Q1   |  10   |        5         |         3          |        2
+  Q2   |  10   |        5         |         3          |        2
+  Q3   |  10   |        4         |         4          |        2
+  Q4   |  10   |        3         |         4          |        3
+  Q5   |  10   |        3         |         4          |        3
+  Q6   |  10   |        3         |         4          |        3
+  Q7   |  10   |        3         |         4          |        3
+  Q8   |  10   |        5         |         3          |        2
+  Q9   |  10   |        4         |         4          |        2
+  Q10  |  10   |        3         |         4          |        3
+  ─────|───────|──────────────────|────────────────────|──────────────────
+  TOT  | 100   |       38         |        37          |       25
+
+7.3 Number Ranges
+
+  Easy:    Groups of 2–4, totals ≤ 20
+  Medium:  Groups of 2–6, totals ≤ 30
+  Hard:    Groups of 2–9, totals ≤ 40; includes reverse-find questions
+
+7.4 Singapore Context Names & Objects Used in Word Problems
+
+  Names:   Wei Ming, Priya, Raju, Ahmad, Mia, Jun, Siti, Ryan, Xiao Ling, Aisha
+  Objects: cupcakes, balloons, stickers, marbles, fish, apples, books, cookies,
+           mangoes, erasers, satay sticks, chicken wings, sweets, colour pencils
+  Contexts: hawker centre, school canteen, classroom, birthday party, pasar malam
+
+7.5 MOE-Aligned Language Requirements
+
+  All questions use approved Singapore MOE vocabulary:
+  - "groups of", "equal groups", "each group", "altogether"
+  - "share equally", "put into equal groups", "how many in each group"
+  - "how many groups", "how many altogether"
+  Sentence structures match Primary 1 Targeting Mathematics style.
+
+═══════════════════════════════════════════════════════════════════════════════
+
+8. GAMIFICATION DESIGN
+
+8.1 Reward System
+
+  Stars (⭐):    Earned per 10-question world (1–3 stars based on score)
+  XP Points:    10 XP correct first try | 7 XP second try | 5 XP with hint used
+  Streak 🔥:    Fire counter for consecutive correct answers
+  Streak Bonus: +5 XP per correct answer when streak ≥ 5
+
+8.2 Badges (Unlockable)
+
+  🏅 "Group Explorer"    — Complete Wonder + Story phases
+  🥈 "Group Builder"     — Complete all 3 Simulation stations
+  🥇 "Equal Champion"   — Score ≥80% on Play phase (≥80 questions correct)
+  💎 "Perfect Groups"   — Score 10/10 in any world
+  🔥 "Streak Star"      — Achieve a streak of 10 consecutive correct answers
+  🌟 "Full Journey"     — Complete all 5 phases (lesson complete badge)
+  🎯 "Sharp Eye"        — Get 5 correct in Station B without any wrong pick
+  🤝 "Fair Sharer"      — Answer 5 fair-sharing word problems correctly (Q7)
+
+8.3 Feedback Mechanics
+
+  ✅ Correct:
+     - Bounce animation on answer card + mascot happy mood
+     - ElevenLabs celebration audio: "Amazing! You made equal groups! 🎉"
+     - XP floats up from answer card (+10 / +7 / +5)
+     - Streak fire counter increments
+
+  ❌ Incorrect (Attempt 1):
+     - Gentle shake animation on answer card
+     - ElevenLabs gentle voice: "Not quite! Let's look at the groups again 🔢"
+     - Hint 1 activates: Group diagram highlighted with circle counts shown
+
+  ❌ Incorrect (Attempt 2):
+     - Stronger shake + Hint 2: Counter animation shows grouping visually
+     - ElevenLabs: "Watch me group them! Can you count with me?"
+
+  ❌ Incorrect (Attempt 3):
+     - Answer revealed with animated explanation (mascot explains)
+     - ElevenLabs: full explanation read aloud
+     - No score penalty — encouragement only
+
+  No negative scoring. Encouragement-first approach always.
+
+8.4 World Map (IntelliPlay™ Level Progression)
+
+  World  1 — "Strawberry Farm"    (Q1–10, groups of 2–3, easy, total ≤12)
+  World  2 — "Cookie Kitchen"     (Q11–20, groups of 2–4, easy-med, total ≤16)
+  World  3 — "Fishy Ocean"        (Q21–30, groups of 2–5, medium, total ≤20)
+  World  4 — "Balloon Festival"   (Q31–40, groups of 3–5, medium, total ≤25)
+  World  5 — "Jungle Canopy"      (Q41–50, groups of 4–6, medium-hard, total ≤30)
+  World  6 — "Space Station"      (Q51–60, groups of 3–7, hard, total ≤35, includes reverse)
+  World  7 — "Volcano Peak"       (Q61–70, groups of 4–8, hard, word problems)
+  World  8 — "Crystal Tower"      (Q71–80, groups of 5–9, hard, mixed types)
+  World  9 — "Rainbow Bridge"     (Q81–90, mixed groups 2–9, hard, all types)
+  World 10 — "Number Palace"      (Q91–100, mixed, hardest, reverse + repeated addition link)
+
+  Unlock gate: ≥6/10 correct (1-star minimum) required to advance to next world.
+  3 stars in a world unlocks a hidden "Bonus Challenge" (3 extra questions).
+
+8.5 Mascot (LearnFlow AI Companion)
+
+  Character:   Friendly robot — "LearnFlow" (matching Intellia branding)
+  Mood States: idle | curious | happy | thinking | celebrating | encouraging
+  Appearances: Wonder hook, Story narration, Simulation feedback, Reflect phase
+  Reactions:   Correct answer, badge unlock, streak milestone, world completion
+  Audio:       All mascot speech via ElevenLabs Alice voice (pre-generated .mp3)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+9. AUDIO & NARRATION DESIGN
+
+9.1 ElevenLabs Pipeline (as per Audio & Narration Pipeline doc)
+
+  Voice Provider:   ElevenLabs (ONLY — no browser Web Speech API fallback)
+  Voice Name:       Alice (Clear, Engaging Educator)
+  Voice ID:         Xb7hH8MSUJpSbSDYk0k2
+  Model:            eleven_multilingual_v2
+  API Key Env Var:  VITE_ELEVENLABS_API_KEY
+
+9.2 Speech Styles Mapped to ElevenLabs Settings
+
+  Style             | stability | similarity_boost | style | Use case
+  ------------------|-----------|------------------|-------|-----------------------------
+  statement         |   0.75    |       0.75       |  0.0  | Story narration, instructions
+  instruction       |   0.80    |       0.75       |  0.0  | Simulation station prompts
+  question          |   0.60    |       0.80       |  0.3  | Practice question read-aloud
+  encouragement     |   0.55    |       0.85       |  0.6  | Correct answer feedback
+  emphasis          |   0.85    |       0.70       |  0.1  | Key vocabulary highlight
+  thinking          |   0.65    |       0.80       |  0.2  | Mascot thinking moments
+  celebration       |   0.45    |       0.90       |  0.8  | Badge unlock, world complete
+
+9.3 Pre-generated Audio Files (Offline — scripts/generate_audio.js)
+
+  All phase narration lines (Wonder, Story panels, Simulate instructions,
+  Reflect prompt, badge unlock messages, world completion) are pre-generated
+  offline and stored as static .mp3 in public/assets/audio/.
+
+  audioMap.js is auto-generated and maps exact text strings → file paths.
+  The frontend checks audioMap first; dynamic generation only for play-phase
+  questions not in the map (using elevenLabsCache in memory).
+
+9.4 Dynamic Generation
+
+  Practice questions (Phase 4) are generated dynamically if not pre-cached.
+  Requires VITE_ELEVENLABS_API_KEY in .env.local.
+  If key is absent, narration silently skipped (no browser TTS fallback).
+  Internal memory cache (elevenLabsCache) prevents re-fetching same text.
+
+9.5 Segment Synchronisation
+
+  The audio engine parses narration as an array of segments (one per sentence).
+  While segment i plays, segment i+1 is eagerly preloaded via getAudioUrl.
+  This guarantees seamless, gap-free narration across multi-sentence scripts.
+  Uses HTML5 Audio API (new Audio()) for playback.
+
+9.6 Narration Script Examples
+
+  Phase 1 (Wonder) — style: thinking
+    "Mia has twelve strawberries. She wants to put the same number on every plate."
+    "Can she do it? How many strawberries will go on each plate?"
+    "Let us find out what equal groups really means!"
+
+  Phase 2 (Story, Panel 1) — style: statement
+    "Wei Ming visits the hawker centre with his family."
+    "There are three tables. Each table has four bowls of noodles."
+    "Every table gets the same number of bowls. That is what we call equal groups!"
+
+  Phase 3 (Station A) — style: instruction
+    "Drag the cookies into the circles. Put three in each group!"
+    "Make sure every group has the same number. Can you do it?"
+
+  Phase 4 (Correct feedback) — style: celebration
+    "Amazing! You made equal groups! You are a superstar!"
+
+  Phase 5 (Reflect) — style: thinking
+    "Wow, what a journey today! Can you tell me one thing you learned about equal groups?"
+
+═══════════════════════════════════════════════════════════════════════════════
+
+10. UX & VISUAL DESIGN REQUIREMENTS
+
+10.1 Visual Theme
+
+  Brand:           Intellia SG — Think. Explore. Become.
+  Reference UI:    https://numberbound.vercel.app/ (mirror exactly)
+  Reference Repo:  https://github.com/dsamyak/numberbound
+  Colours:         Match numberbound.vercel.app exactly
+    - Primary blue: consistent with existing Intellia lessons (#4A90D9 / equivalent)
+    - Accent gold/yellow for rewards and stars
+    - Soft coral/red for wrong-answer shake states
+    - White card backgrounds, soft drop shadows
+    - Phase band colours: distinct per phase (matching Intellia journey infographic)
+  Typography:      Rounded, playful — Nunito or Fredoka One
+  Illustrations:   Cartoon-style, child-friendly, Singapore-context hawker/school imagery
+  Group Bubbles:   Circular group containers (SVG), coloured distinctly from each other
+
+10.2 Layout Structure (mirrors numberbound.vercel.app)
+
+  Top Bar:         Intellia logo | Lesson title "Equal Groups" | 5-phase dot tracker
+  Main Area:       Phase content (fills screen, responsive, smooth phase transitions)
+  Bottom Bar:      XP counter | Star count | Streak fire | Phase navigation arrows
+  Sidebar:         Hidden on mobile; shown on tablet+ as vertical phase map
+
+10.3 Equal Group Diagram Visual Component (Primary Visual)
+
+  Used throughout all phases. Visual spec:
+  - N circles (groups), each containing M dots/emoji objects
+  - Circles are large, colourful, clearly separated
+  - Connecting label underneath: "3 groups of 4 = 12"
+  - Dots animate in (count-up animation) when diagram first renders
+  - Missing value shown as dashed-border circle with "?" inside
+
+10.4 Accessibility
+
+  Large tap targets (minimum 44×44px on all interactive elements)
+  WCAG AA colour contrast on all text elements
+  All narration via ElevenLabs (premium, consistent voice)
+  Keyboard navigable (Tab + Enter for all interactions)
+  No mandatory time pressure (optional timer toggle in challenge mode only)
+  Drag interactions have touch-equivalent tap+tap fallback
+
+10.5 Responsive Design
+
+  Primary:    iPad / tablet (768px+) — classroom context
+  Secondary:  Desktop browser (1024px+)
+  Tertiary:   Mobile (375px+) — stacked single-column layout
+
+═══════════════════════════════════════════════════════════════════════════════
+
+11. CONTENT REQUIREMENTS
+
+11.1 Simulation Visuals
+
+  Group diagrams:      SVG-rendered large circles with emoji dot objects inside
+  Object pool:         Colourful emoji items (🍓 🌟 🍪 🐟 🎈 🍎) rotated per session
+  Station B cards:     4 arrangement cards, distinct layouts, clean whitespace
+  Abstract sentences:  Large bold typography, one highlighted blank per round
+
+11.2 Question Bank Coverage
+
+  All 10 question types × 10 questions = 100 unique question objects in questionBank.js
+  Questions randomised per session using Fisher-Yates shuffle
+  No two sessions present same question order
+  MCQ distractors always plausible (within ±3 or logical wrong group count)
+
+11.3 Word Problem Format (MOE style)
+
+  Multiplication sense:
+    "[Name] puts [group-size] [objects] on each [container].
+     [He/She] has [num-groups] [containers]. How many [objects] altogether?"
+
+  Fair-sharing / Division sense:
+    "[Name] has [total] [objects]. [He/She] shares them equally into
+     [num-groups] [containers]. How many [objects] does each [container] get?"
+
+  Let's Think Along style (extended):
+    "[Name] has ___ [objects]. [He/She] makes ___ equal groups.
+     How many are in each group? Draw it and check!"
+
+11.4 Audio Script Parity (1:1 Strict Parity Rule)
+
+  Every on-screen text string that is narrated must match the narration.js text
+  exactly — same words, same punctuation. This prevents confusion for young learners
+  who are simultaneously listening and reading. Any UI text change requires updating
+  both the generate_audio.js phrases array and the narration.js file.
+
+═══════════════════════════════════════════════════════════════════════════════
+
+12. SUCCESS CRITERIA (v1.0)
+
+  Criterion                                      | Target
+  -----------------------------------------------|---------------------
+  All 100 questions randomised correctly          | ✅ Required
+  All 3 simulation stations functional            | ✅ Required
+  All 5 phases navigable end-to-end              | ✅ Required
+  Gamification (XP, stars, 8 badges) working     | ✅ Required
+  World map 10-world progression logic correct   | ✅ Required
+  ElevenLabs audio plays for all phase narration | ✅ Required
+  Audio pipeline (pre-gen + dynamic) functional  | ✅ Required
+  Mobile/tablet responsive layout               | ✅ Required
+  Singapore MOE syllabus 100% covered           | ✅ Required
+  Loads in < 3 seconds (Vite production build)  | ✅ Required
+  WCAG AA accessible                            | ✅ Required
+  UI matches numberbound.vercel.app structure   | ✅ Required
+  Hosted correctly at intelliasg.com lesson URL | ✅ Required
+
+═══════════════════════════════════════════════════════════════════════════════
+
+13. OUT OF SCOPE (v1.0)
+
+  - Teacher dashboard / backend analytics
+  - Student login / account persistence across devices
+  - Multiplayer or class competition features
+  - Parent progress report emails
+  - Print worksheet generation
+  - Lessons 4.2 (Repeated Addition) and 4.3 (Basic Sharing and Grouping) — separate modules
+  - Assessment against full curriculum (broader test engine)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+Document Version:    1.0 | May 2026
+Product:             Intellia SG — Grade 1 Math, Lesson 4.1
+Lesson Title:        Equal Groups — Introduction to Multiplication and Division
+Curriculum:          Singapore MOE Primary 1 Mathematics
+Reference UI:        https://numberbound.vercel.app/
+Reference Repo:      https://github.com/dsamyak/numberbound
+Audio Pipeline:      ElevenLabs (Alice, Xb7hH8MSUJpSbSDYk0k2, eleven_multilingual_v2)
+Parent Course Page:  https://intelliasg.com/courses/grade-1-math/
+Lesson URL:          https://intelliasg.com/courses/grade-1-math/lessons/equal-groups/

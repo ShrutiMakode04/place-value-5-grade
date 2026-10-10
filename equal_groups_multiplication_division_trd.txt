@@ -1,0 +1,1118 @@
+Technical Requirements Document (TRD)
+Equal Groups — Introduction to Multiplication & Division | Grade 1 Math
+Intellia SG | Singapore Primary Mathematics Curriculum (MOE)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+1. TECHNICAL OVERVIEW
+
+This document specifies the architecture, component design, state management,
+data models, simulation logic, gamification implementation, audio pipeline,
+and quality standards for the "Equal Groups — Introduction to Multiplication
+and Division" interactive lesson module (Lesson 4.1) within Intellia SG's
+Grade 1 Math program.
+
+The module is a React 18 application (Vite + JSX), structured identically to
+the reference repository https://github.com/dsamyak/numberbound, and styled
+to match https://numberbound.vercel.app/. It will be embedded in WordPress at:
+
+  https://intelliasg.com/courses/grade-1-math/lessons/equal-groups/
+
+Audio narration uses ElevenLabs exclusively (no browser Web Speech API fallback),
+mirroring the pipeline from the "Word Problems Using Addition Audio & Narration
+Pipeline" document, adapted for this lesson's scripts.
+
+═══════════════════════════════════════════════════════════════════════════════
+
+2. TECHNOLOGY STACK
+
+  Layer              | Technology                  | Rationale
+  -------------------|-----------------------------|------------------------------------------
+  UI Framework       | React 18 (JSX, Vite)        | Matches numberbound repo structure
+  State Management   | useState + useReducer        | Sufficient for single-module complexity
+  Styling            | CSS Modules + Tailwind       | Matches existing repo CSS approach
+  Icons              | Lucide React                 | Available in artifact environment
+  Animation          | CSS keyframes + transitions  | No external dependency needed
+  SVG Diagrams       | Inline SVG (React)           | For equal-group bubble diagrams
+  Persistence        | localStorage                 | Session state, no backend needed
+  Audio (Primary)    | ElevenLabs API               | Premium, consistent voice (Alice)
+  Audio (Playback)   | HTML5 Audio API (new Audio())| Browser-native, no library needed
+  Math               | Vanilla JS                   | No library required
+  Build Tool         | Vite                         | Matches repo (vite.config.js present)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+3. PROJECT STRUCTURE (mirrors numberbound repo)
+
+equal-groups/
+├── public/
+│   └── assets/
+│       └── audio/                   # Pre-generated .mp3 files (ElevenLabs)
+│           ├── audio_wonder_hook_0.mp3
+│           ├── audio_story_panel1_0.mp3
+│           ├── audio_story_panel2_0.mp3
+│           ├── audio_story_panel3_0.mp3
+│           ├── audio_story_panel4_0.mp3
+│           ├── audio_story_panel5_0.mp3
+│           ├── audio_story_panel6_0.mp3
+│           ├── audio_station_a_instruction_0.mp3
+│           ├── audio_station_b_instruction_0.mp3
+│           ├── audio_station_c_instruction_0.mp3
+│           ├── audio_correct_0.mp3
+│           ├── audio_reflect_prompt_0.mp3
+│           └── ... (all phase phrases pre-generated)
+│       └── images/
+│           ├── mascot-idle.svg
+│           ├── mascot-happy.svg
+│           ├── mascot-thinking.svg
+│           ├── mascot-celebrate.svg
+│           └── world-map-bg.svg
+├── src/
+│   ├── main.jsx                     # React entry point
+│   ├── App.jsx                      # Root component, global state (useReducer)
+│   ├── App.css                      # Global styles (mirrors numberbound CSS)
+│   ├── components/
+│   │   ├── IntroScreen.jsx          # Welcome + lesson overview + phase dot tracker
+│   │   ├── ProgressMap.jsx          # 5-phase dot tracker (top bar)
+│   │   ├── phases/
+│   │   │   ├── WonderPhase.jsx      # Phase 1: Hook animation + ElevenLabs narration
+│   │   │   ├── StoryPhase.jsx       # Phase 2: Illustrated narrative panels
+│   │   │   ├── SimulatePhase.jsx    # Phase 3: Simulation station wrapper
+│   │   │   ├── PlayPhase.jsx        # Phase 4: IntelliPlay™ quiz engine
+│   │   │   └── ReflectPhase.jsx     # Phase 5: Journal + completion badge
+│   │   ├── simulations/
+│   │   │   ├── GroupingStation.jsx  # Station A: Drag objects into equal group circles
+│   │   │   ├── SpotEqualStation.jsx # Station B: Visual equal-group discrimination
+│   │   │   └── SentenceStation.jsx  # Station C: Fill the "___ groups of ___ = ___"
+│   │   ├── quiz/
+│   │   │   ├── QuestionRenderer.jsx # Polymorphic dispatcher → type-specific component
+│   │   │   ├── CountGroupsQ.jsx     # Q1: Count equal groups → find total
+│   │   │   ├── PictureGroupQ.jsx    # Q2: Tap picture that shows N groups of M
+│   │   │   ├── FillTotalQ.jsx       # Q3: Fill blank — find total
+│   │   │   ├── FillGroupSizeQ.jsx   # Q4: Fill blank — find group size
+│   │   │   ├── FillNumGroupsQ.jsx   # Q5: Fill blank — find number of groups
+│   │   │   ├── WordProbMultQ.jsx    # Q6: Word problem (multiplication sense)
+│   │   │   ├── WordProbDivQ.jsx     # Q7: Word problem (fair-sharing sense)
+│   │   │   ├── TrueFalseGroupQ.jsx  # Q8: True/False — is this equal?
+│   │   │   ├── SpotGroupMCQ.jsx     # Q9: Which picture shows equal groups? (4 choices)
+│   │   │   ├── RepeatedAddQ.jsx     # Q10: Repeated addition link
+│   │   │   └── HintOverlay.jsx      # Hint 1 & 2 + animated explanation after 3 fails
+│   │   ├── gamification/
+│   │   │   ├── XPTracker.jsx        # XP bar + floating XP animation
+│   │   │   ├── StarRating.jsx       # 1–3 star rating per world
+│   │   │   ├── BadgePanel.jsx       # Badge unlock toast + panel
+│   │   │   ├── StreakCounter.jsx    # Fire streak counter
+│   │   │   └── WorldMap.jsx         # 10-world progress map (horizontal scroll)
+│   │   └── shared/
+│   │       ├── Mascot.jsx           # LearnFlow robot with mood states
+│   │       ├── EqualGroupDiagram.jsx# Reusable SVG: N circles of M dots
+│   │       ├── ObjectPool.jsx       # Draggable emoji object source tray
+│   │       ├── GroupCircle.jsx      # Single group circle (droppable zone)
+│   │       ├── NumberPad.jsx        # Large tap-friendly digit input (0–9)
+│   │       └── FeedbackOverlay.jsx  # Correct/incorrect overlay with animation
+│   ├── data/
+│   │   ├── questionBank.js          # 100 question objects (all types)
+│   │   └── storyContent.js          # Story phase panel data (text + visuals)
+│   ├── hooks/
+│   │   ├── useAudio.js              # ElevenLabs + HTML5 Audio playback hook
+│   │   ├── useGameState.js          # Gamification state hook
+│   │   └── useLocalStorage.js       # Session persistence hook (24hr resume)
+│   └── utils/
+│       ├── audioMap.js              # AUTO-GENERATED: text → .mp3 path map
+│       ├── shuffle.js               # Fisher-Yates randomisation
+│       ├── scoring.js               # XP + star calculation + distractor gen
+│       └── badgeEngine.js           # Badge unlock condition logic
+├── scripts/
+│   ├── generate_audio.js            # Offline ElevenLabs audio pre-generation
+│   └── clean_audio.js               # Remove orphaned .mp3 files
+├── api/
+│   └── elevenlabs.js                # ElevenLabs proxy (if server-side key needed)
+├── index.html
+├── package.json
+├── vite.config.js
+└── .gitignore
+
+═══════════════════════════════════════════════════════════════════════════════
+
+4. APPLICATION STATE ARCHITECTURE
+
+4.1 Global State (App.jsx — useReducer)
+
+const initialState = {
+  // Navigation
+  phase: 'intro',         // 'intro'|'wonder'|'story'|'simulate'|'play'|'reflect'|'results'
+  storyPanel: 0,           // 0–5 (6 story panels)
+  currentSimStation: 0,    // 0=GroupingTable, 1=SpotEqual, 2=FillSentence
+  simStationsComplete: [false, false, false],
+  simRound: 0,             // Round index within current station (0–3)
+
+  // Play / Challenge phase
+  questionSet: [],          // 100 shuffled Question objects
+  currentQuestion: 0,       // 0–99
+  currentWorld: 0,          // 0–9 (10 worlds)
+  worldScores: Array(10).fill(null),
+  hintsUsed: 0,
+  attemptCount: 0,           // Attempts on current question (max 3)
+
+  // Gamification
+  xp: 0,
+  totalStars: 0,
+  streak: 0,
+  maxStreak: 0,
+  badges: [],               // Array of unlocked badge IDs
+
+  // Session metadata
+  phaseComplete: {
+    wonder: false, story: false, simulate: false,
+    play: false, reflect: false,
+  },
+  sessionId: crypto.randomUUID(),
+
+  // Settings
+  audioEnabled: true,       // ElevenLabs narration on/off
+  musicEnabled: false,      // Background ambient music (off by default)
+};
+
+4.2 Reducer Action Types
+
+const ACTIONS = {
+  SET_PHASE:              'SET_PHASE',
+  NEXT_STORY_PANEL:       'NEXT_STORY_PANEL',
+  ADVANCE_SIM_STATION:    'ADVANCE_SIM_STATION',
+  COMPLETE_SIM_STATION:   'COMPLETE_SIM_STATION',
+  NEXT_SIM_ROUND:         'NEXT_SIM_ROUND',
+  LOAD_QUESTIONS:         'LOAD_QUESTIONS',
+  ANSWER_CORRECT:         'ANSWER_CORRECT',
+  ANSWER_INCORRECT:       'ANSWER_INCORRECT',
+  USE_HINT:               'USE_HINT',
+  NEXT_QUESTION:          'NEXT_QUESTION',
+  UNLOCK_BADGE:           'UNLOCK_BADGE',
+  COMPLETE_PHASE:         'COMPLETE_PHASE',
+  TOGGLE_AUDIO:           'TOGGLE_AUDIO',
+  TOGGLE_MUSIC:           'TOGGLE_MUSIC',
+  RESTORE_SESSION:        'RESTORE_SESSION',
+  RESET_SESSION:          'RESET_SESSION',
+};
+
+4.3 Key Reducer Logic
+
+// ANSWER_CORRECT dispatch
+case ACTIONS.ANSWER_CORRECT: {
+  const xpEarned = calcXP(state.attemptCount + 1, state.hintsUsed, state.streak);
+  const newStreak = state.streak + 1;
+  const worldIndex = Math.floor(state.currentQuestion / 10);
+  const newWorldScore = (state.worldScores[worldIndex] || 0) + 1;
+  const updatedWorldScores = [...state.worldScores];
+  updatedWorldScores[worldIndex] = newWorldScore;
+  return {
+    ...state,
+    xp: state.xp + xpEarned,
+    streak: newStreak,
+    maxStreak: Math.max(state.maxStreak, newStreak),
+    worldScores: updatedWorldScores,
+    totalStars: calcTotalStars(updatedWorldScores),
+    hintsUsed: 0,
+    attemptCount: 0,
+  };
+}
+
+// ANSWER_INCORRECT dispatch
+case ACTIONS.ANSWER_INCORRECT: {
+  return {
+    ...state,
+    streak: 0,
+    attemptCount: state.attemptCount + 1,
+  };
+}
+
+═══════════════════════════════════════════════════════════════════════════════
+
+5. QUESTION DATA MODEL
+
+5.1 Question Schema
+
+interface Question {
+  id:           string;        // e.g. "Q1_003", "Q7_008"
+  type:         QuestionType;  // One of 10 enum values (see below)
+  world:        number;        // 0–9 (which world this belongs to)
+  difficulty:   1 | 2 | 3;    // 1=easy(≤20), 2=medium(≤30), 3=hard(≤40)
+
+  // Core math values
+  numGroups:    number;        // Number of groups
+  groupSize:    number;        // Size of each group
+  total:        number;        // numGroups × groupSize
+  missingSlot:  'numGroups' | 'groupSize' | 'total';
+
+  // Rendering
+  questionText: string;        // Full narrated question text (ElevenLabs reads this)
+  visual:       VisualType;    // 'groupDiagram' | 'picture' | 'sentence' | 'trueFalse'
+  objectEmoji?: string;        // E.g. '🍓', '🍪', '⭐', '🐟', '🎈'
+
+  // MCQ
+  options?:     (number|string)[];  // 4 MCQ options (always includes correctAnswer)
+
+  // Hints
+  hint1:        string;        // Shown after 1 wrong attempt
+  hint2:        string;        // Shown after 2 wrong attempts (animation trigger)
+  explanation:  string;        // Full text explanation after 3 fails (read aloud)
+
+  // Word problems only
+  characterName?:  string;
+  containerName?:  string;     // 'plate', 'bag', 'box', 'basket'
+  objectName?:     string;
+
+  // True/False only
+  isTrue?:      boolean;
+
+  // Answer
+  correctAnswer: number | string;
+}
+
+type QuestionType =
+  | 'count_groups'         // Q1: Count total in equal groups
+  | 'picture_group'        // Q2: Tap picture showing N groups of M
+  | 'fill_total'           // Q3: N groups of M = ___
+  | 'fill_group_size'      // Q4: N groups of ___ = total
+  | 'fill_num_groups'      // Q5: ___ groups of M = total
+  | 'word_problem_mult'    // Q6: multiplication-sense word problem
+  | 'word_problem_div'     // Q7: fair-sharing word problem
+  | 'true_false_group'     // Q8: Is "N groups of M = X" true or false?
+  | 'spot_group_mcq'       // Q9: Which picture shows equal groups?
+  | 'repeated_addition';   // Q10: Repeated addition link
+
+type VisualType =
+  | 'groupDiagram'         // SVG circles with emoji dots (EqualGroupDiagram)
+  | 'picture'              // Static arrangement picture card
+  | 'sentence'             // "___ groups of ___ = ___" with highlighted blank
+  | 'trueFalse';           // Statement + True/False buttons
+
+5.2 Sample Question Objects
+
+// Q1 — Count Equal Groups
+{
+  id: "Q1_001",
+  type: "count_groups",
+  world: 0,
+  difficulty: 1,
+  numGroups: 3, groupSize: 4, total: 12,
+  missingSlot: "total",
+  questionText: "There are 3 groups. Each group has 4 stars. How many stars altogether?",
+  visual: "groupDiagram",
+  objectEmoji: "⭐",
+  hint1: "Count the stars in each group: 1, 2, 3, 4. Now count all the groups.",
+  hint2: "Say it with me: 4, 8, 12! Three groups of 4 is 12.",
+  explanation: "3 groups of 4 equals 12. We can count: 4, 8, 12!",
+  options: [10, 11, 12, 13],
+  correctAnswer: 12,
+}
+
+// Q6 — Word Problem (Multiplication Sense)
+{
+  id: "Q6_004",
+  type: "word_problem_mult",
+  world: 3,
+  difficulty: 2,
+  numGroups: 3, groupSize: 5, total: 15,
+  missingSlot: "total",
+  questionText: "Priya puts 5 cupcakes on each plate. She has 3 plates. How many cupcakes altogether?",
+  visual: "picture",
+  objectEmoji: "🧁",
+  characterName: "Priya",
+  containerName: "plate",
+  objectName: "cupcakes",
+  hint1: "Draw 3 circles. Put 5 cupcakes in each one.",
+  hint2: "5 and 5 and 5. Count with me: 5, 10, 15!",
+  explanation: "3 groups of 5 is 15. Priya has 15 cupcakes altogether.",
+  options: [12, 13, 15, 16],
+  correctAnswer: 15,
+}
+
+// Q7 — Word Problem (Fair Sharing / Division Sense)
+{
+  id: "Q7_002",
+  type: "word_problem_div",
+  world: 2,
+  difficulty: 2,
+  numGroups: 4, groupSize: 3, total: 12,
+  missingSlot: "groupSize",
+  questionText: "Ahmad has 12 mangoes. He shares them equally into 4 bags. How many mangoes does each bag get?",
+  visual: "picture",
+  objectEmoji: "🥭",
+  characterName: "Ahmad",
+  containerName: "bag",
+  objectName: "mangoes",
+  hint1: "Draw 4 bags. Share 12 mangoes equally — put the same in each bag.",
+  hint2: "12 shared into 4 equal groups. Count: 3 in each bag!",
+  explanation: "12 shared equally into 4 groups gives 3 in each group.",
+  options: [2, 3, 4, 6],
+  correctAnswer: 3,
+}
+
+// Q10 — Repeated Addition Link
+{
+  id: "Q10_005",
+  type: "repeated_addition",
+  world: 5,
+  difficulty: 3,
+  numGroups: 4, groupSize: 6, total: 24,
+  missingSlot: "numGroups",
+  questionText: "6 + 6 + 6 + 6 = ___ groups of 6",
+  visual: "sentence",
+  hint1: "Count how many times you see the number 6.",
+  hint2: "6 appears 4 times! That means there are 4 groups of 6.",
+  explanation: "6 + 6 + 6 + 6 has 4 sixes. So it is 4 groups of 6.",
+  options: [3, 4, 5, 6],
+  correctAnswer: 4,
+}
+
+═══════════════════════════════════════════════════════════════════════════════
+
+6. EQUAL GROUP DIAGRAM SVG COMPONENT
+
+// EqualGroupDiagram.jsx — reusable SVG for N groups of M objects
+
+const EqualGroupDiagram = ({
+  numGroups,
+  groupSize,
+  missingSlot,
+  objectEmoji = '⭐',
+  animated = false,
+  size = 'medium',  // 'small' | 'medium' | 'large'
+}) => {
+
+  // Layout: groups arranged in a row (up to 5) or 2 rows (6–9 groups)
+  const circleRadius = size === 'large' ? 48 : size === 'medium' ? 38 : 28;
+  const dotSize = size === 'large' ? 18 : size === 'medium' ? 14 : 10;
+  const groupsPerRow = Math.min(numGroups, 5);
+  const numRows = Math.ceil(numGroups / 5);
+  const svgWidth = groupsPerRow * (circleRadius * 2 + 20) + 20;
+  const svgHeight = numRows * (circleRadius * 2 + 40) + 40;
+
+  return (
+    <svg viewBox={`0 0 ${svgWidth} ${svgHeight}`}
+         xmlns="http://www.w3.org/2000/svg"
+         style={{ maxWidth: '100%', height: 'auto' }}>
+      {Array(numGroups).fill(0).map((_, gi) => {
+        const row = Math.floor(gi / 5);
+        const col = gi % 5;
+        const cx = col * (circleRadius * 2 + 20) + circleRadius + 10;
+        const cy = row * (circleRadius * 2 + 40) + circleRadius + 20;
+
+        return (
+          <g key={gi}>
+            {/* Group circle */}
+            <circle
+              cx={cx} cy={cy} r={circleRadius}
+              fill={`hsl(${(gi * 45) % 360}, 70%, 90%)`}
+              stroke={`hsl(${(gi * 45) % 360}, 70%, 60%)`}
+              strokeWidth="2.5"
+              strokeDasharray={missingSlot === 'groupSize' && gi === 0 ? '6,3' : '0'}
+            />
+            {/* Emoji dots arranged inside circle (up to groupSize) */}
+            {Array(groupSize).fill(0).map((_, di) => {
+              const angle = (di / groupSize) * 2 * Math.PI - Math.PI / 2;
+              const r = groupSize === 1 ? 0 : circleRadius * 0.55;
+              const dx = cx + r * Math.cos(angle);
+              const dy = cy + r * Math.sin(angle);
+              return (
+                <text key={di} x={dx} y={dy + dotSize / 3}
+                      textAnchor="middle" fontSize={dotSize}>
+                  {objectEmoji}
+                </text>
+              );
+            })}
+            {/* Group count label below circle */}
+            <text x={cx} y={cy + circleRadius + 16}
+                  textAnchor="middle" fontSize="13"
+                  fill="#555" fontWeight="500">
+              {groupSize}
+            </text>
+          </g>
+        );
+      })}
+      {/* Total label underneath */}
+      <text
+        x={svgWidth / 2} y={svgHeight - 6}
+        textAnchor="middle" fontSize="15"
+        fill="#333" fontWeight="bold">
+        {`${numGroups} groups of ${groupSize} = ${missingSlot === 'total' ? '?' : numGroups * groupSize}`}
+      </text>
+    </svg>
+  );
+};
+
+Animation variants:
+  animated=true → CSS 'dotCountUp' keyframe: dots appear one-by-one with 80ms delay per dot
+  shake variant  → CSS 'shake' keyframe applied to <svg> wrapper on wrong answer
+  bounce variant → CSS 'bounceIn' keyframe applied to <svg> wrapper on correct answer
+
+═══════════════════════════════════════════════════════════════════════════════
+
+7. SIMULATION STATION COMPONENT SPECS
+
+7.1 GroupingStation.jsx — Station A (Concrete)
+
+State:
+  const [groupConfig, setGroupConfig] = useState(getStationARound(state.simRound));
+  // groupConfig: { numGroups: 3, groupSize: 4, objectEmoji: '🍪' }
+  const [placed, setPlaced] = useState(
+    Array(groupConfig.numGroups).fill(0)  // Count of objects in each circle
+  );
+  const [objectPool, setObjectPool] = useState(
+    Array(groupConfig.numGroups * groupConfig.groupSize).fill(groupConfig.objectEmoji)
+  );
+
+Interaction (Drag):
+  - ObjectPool renders draggable <span> elements for each object
+  - GroupCircle renders a droppable <div> zone
+  - onDrop: placed[circleIndex] += 1; remove object from pool
+  - All circles show counter badge: "2 / 4"
+
+Interaction (Tap fallback):
+  - Tap object in pool → object becomes "selected" (glows)
+  - Tap circle → object moves into circle
+
+Completion Check:
+  - placed.every(count => count === groupConfig.groupSize) → all equal
+  - Submit button appears only when total objects placed === total
+  - On submit correct: mascot celebrates, ElevenLabs plays celebration audio
+  - On submit unequal: shake + narration "One group has more! Let's try again."
+
+Station A Rounds (4 rounds, randomised order):
+  { numGroups: 2, groupSize: 3, objectEmoji: '🍪' }
+  { numGroups: 3, groupSize: 4, objectEmoji: '⭐' }
+  { numGroups: 4, groupSize: 2, objectEmoji: '🐟' }
+  { numGroups: 5, groupSize: 3, objectEmoji: '🎈' }
+
+7.2 SpotEqualStation.jsx — Station B (Pictorial)
+
+State:
+  const [arrangements, setArrangements] = useState(generateArrangementCards(round));
+  const [selected, setSelected] = useState([]);   // Indices of tapped cards
+  const [submitted, setSubmitted] = useState(false);
+
+Card Generation (generateArrangementCards):
+  - Creates 4 arrangement cards: 2–3 have equal groups, 1–2 are unequal
+  - Each card shows numGroups circles, each with randomised dot counts
+  - Equal card: all groups have same count (e.g. 3, 3, 3)
+  - Unequal card: one group differs by ±1 (e.g. 3, 3, 4) — plausible distractor
+  - Objects rendered as emoji text inside group circles (no numbers shown)
+
+Interaction:
+  - Tap a card → border highlights (selected state)
+  - Multi-select allowed (student picks all equal ones)
+  - "Check" button submits selection
+  - On submit: correct cards glow green, wrong cards glow red (1.5s)
+  - Then advance to next round or next station
+
+Rounds (3 rounds per station):
+  Round 1: 2-group arrangements (easy visual split)
+  Round 2: 3-group arrangements (medium — more counting needed)
+  Round 3: 4-group arrangements (hard — attention required for small differences)
+
+7.3 SentenceStation.jsx — Station C (Abstract)
+
+State:
+  const [problem, setProblem] = useState(getSentenceProblem(state.simRound));
+  // problem: { numGroups, groupSize, total, missingSlot }
+  const [inputValue, setInputValue] = useState('');
+  const [showDiagram, setShowDiagram] = useState(false);
+
+Layout:
+  <div class="sentence-row">
+    {missingSlot === 'numGroups'
+      ? <BlankInput value={inputValue} />
+      : <span class="given-value">{numGroups}</span>
+    }
+    <span class="label">groups of</span>
+    {missingSlot === 'groupSize'
+      ? <BlankInput value={inputValue} />
+      : <span class="given-value">{groupSize}</span>
+    }
+    <span class="equals">=</span>
+    {missingSlot === 'total'
+      ? <BlankInput value={inputValue} />
+      : <span class="given-value">{total}</span>
+    }
+  </div>
+  <NumberPad max={40} value={inputValue} onChange={setInputValue} onSubmit={handleSubmit} />
+  <button onClick={() => setShowDiagram(!showDiagram)}>Show me the groups 🔢</button>
+  {showDiagram && <EqualGroupDiagram numGroups={numGroups} groupSize={groupSize}
+                    missingSlot={missingSlot} animated />}
+
+Variants (rotated across 3 rounds):
+  Round 1: Find total      → 3 groups of 4 = ___
+  Round 2: Find group size → 2 groups of ___ = 10
+  Round 3: Find num groups → ___ groups of 5 = 15
+
+ElevenLabs reads the full sentence aloud when displayed:
+  "Three groups of four equals what? Type the answer!"
+
+═══════════════════════════════════════════════════════════════════════════════
+
+8. AUDIO PIPELINE (ElevenLabs — Matching Reference Architecture)
+
+8.1 Voice Configuration
+
+  Voice Name:   Alice
+  Voice ID:     Xb7hH8MSUJpSbSDYk0k2
+  Model:        eleven_multilingual_v2
+  API Key Var:  VITE_ELEVENLABS_API_KEY (in .env.local)
+
+8.2 Speech Style Settings (per style type)
+
+  Style         | stability | similarity_boost | style_exaggeration
+  --------------|-----------|------------------|-------------------
+  statement     |   0.75    |       0.75       |        0.0
+  instruction   |   0.80    |       0.75       |        0.0
+  question      |   0.60    |       0.80       |        0.3
+  encouragement |   0.55    |       0.85       |        0.6
+  emphasis      |   0.85    |       0.70       |        0.1
+  thinking      |   0.65    |       0.80       |        0.2
+  celebration   |   0.45    |       0.90       |        0.8
+
+8.3 Offline Pre-generation Script (scripts/generate_audio.js)
+
+const phrases = [
+  // Phase 1 — Wonder
+  { text: "Mia has twelve strawberries. She wants to put the same number on every plate.", style: 'thinking' },
+  { text: "Can she do it? How many strawberries will go on each plate?", style: 'question' },
+  { text: "Let us find out what equal groups really means!", style: 'encouragement' },
+
+  // Phase 2 — Story Panels
+  { text: "Wei Ming visits the hawker centre with his family.", style: 'statement' },
+  { text: "There are three tables. Each table has four bowls of noodles.", style: 'statement' },
+  { text: "Every table gets the same number of bowls. That is what we call equal groups!", style: 'emphasis' },
+  { text: "Three groups of four. Count with me: four, eight, twelve. Altogether equals twelve!", style: 'statement' },
+  { text: "Now Wei Ming's family shares ten apples equally into five bags.", style: 'statement' },
+  { text: "Each bag gets two apples. Fair sharing means equal groups!", style: 'emphasis' },
+
+  // Phase 3 — Simulation Instructions
+  { text: "Drag the cookies into the circles. Put three in each group!", style: 'instruction' },
+  { text: "Make sure every group has the same number. Can you do it?", style: 'question' },
+  { text: "Look at these arrangements. Which ones show equal groups? Tap to choose!", style: 'instruction' },
+  { text: "Now fill in the missing number. Three groups of four equals what?", style: 'question' },
+
+  // Phase 4 — Feedback
+  { text: "Amazing! You made equal groups! You are a superstar!", style: 'celebration' },
+  { text: "Not quite! Let us look at the groups again.", style: 'encouragement' },
+  { text: "Watch me group them! Can you count with me?", style: 'thinking' },
+
+  // Phase 5 — Reflect
+  { text: "Wow, what a journey today! Can you tell me one thing you learned about equal groups?", style: 'thinking' },
+  { text: "Lesson complete! You are an Equal Groups Champion!", style: 'celebration' },
+
+  // Badge unlocks
+  { text: "Badge unlocked! You are a Group Explorer!", style: 'celebration' },
+  { text: "Badge unlocked! Group Builder! You completed all three stations!", style: 'celebration' },
+  { text: "Badge unlocked! Equal Champion! You scored over eighty percent!", style: 'celebration' },
+];
+
+// Script hits ElevenLabs API for each phrase, saves to public/assets/audio/
+// Auto-generates src/utils/audioMap.js mapping text → .mp3 path
+
+8.4 Frontend Audio Engine (src/hooks/useAudio.js)
+
+// Step 1: Check audioMap for pre-generated static asset
+// Step 2: If not found + API key present → fetch from ElevenLabs dynamically
+// Step 3: Cache dynamic result in elevenLabsCache (in-memory Map)
+// Step 4: Play via HTML5 Audio API (new Audio(url))
+// Step 5: While segment i plays → preload segment i+1 (eager preload)
+
+const elevenLabsCache = new Map();  // In-memory; cleared on page refresh
+
+export async function getAudioUrl(text, style = 'statement', apiKey) {
+  // 1. Static map check (fastest path)
+  if (audioMap[text]) return audioMap[text];
+
+  // 2. Memory cache check
+  const cacheKey = `${text}::${style}`;
+  if (elevenLabsCache.has(cacheKey)) return elevenLabsCache.get(cacheKey);
+
+  // 3. Dynamic generation (requires API key)
+  if (!apiKey) return null;  // Silent skip — no fallback
+
+  const styleSettings = STYLE_SETTINGS[style] ?? STYLE_SETTINGS.statement;
+  const response = await fetch(
+    `https://api.elevenlabs.io/v1/text-to-speech/Xb7hH8MSUJpSbSDYk0k2`,
+    {
+      method: 'POST',
+      headers: {
+        'xi-api-key': apiKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        text,
+        model_id: 'eleven_multilingual_v2',
+        voice_settings: styleSettings,
+      }),
+    }
+  );
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
+  elevenLabsCache.set(cacheKey, url);
+  return url;
+}
+
+export async function narrate(segments, apiKey, onSegmentStart) {
+  for (let i = 0; i < segments.length; i++) {
+    const { text, style } = segments[i];
+    const url = await getAudioUrl(text, style, apiKey);
+    if (!url) continue;  // Silent skip if no audio available
+
+    // Eager preload next segment
+    if (i + 1 < segments.length) {
+      getAudioUrl(segments[i + 1].text, segments[i + 1].style, apiKey);
+    }
+
+    if (onSegmentStart) onSegmentStart(i);
+    await playAudio(url);  // Resolves on 'ended' event
+  }
+}
+
+async function playAudio(url) {
+  return new Promise((resolve) => {
+    const audio = new Audio(url);
+    audio.onended = resolve;
+    audio.onerror = resolve;  // Silent fail — never block UX
+    audio.play().catch(resolve);
+  });
+}
+
+8.5 Audio Cleanup (scripts/clean_audio.js)
+
+  - Imports audioMap.js to determine all valid referenced .mp3 paths
+  - Scans public/assets/audio/ for all .mp3 files
+  - Deletes any .mp3 not present in audioMap (orphaned files)
+  - Run after any phrase deletion or text edit in generate_audio.js
+
+8.6 Narration Synchronisation Rules (1:1 Parity)
+
+  CRITICAL: Every on-screen text string that is narrated must match
+  narration.js EXACTLY (same words, same punctuation, same capitalisation).
+  Any UI text change requires:
+    1. Update generate_audio.js phrases array
+    2. Re-run: node scripts/generate_audio.js
+    3. Update corresponding text in the React UI component
+    4. Optionally run: node scripts/clean_audio.js
+
+═══════════════════════════════════════════════════════════════════════════════
+
+9. RANDOMISATION ENGINE
+
+9.1 Fisher-Yates Shuffle (utils/shuffle.js)
+
+export function shuffleArray(array) {
+  const arr = [...array];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+export function generateSessionQuestions(bank) {
+  const byType = {};
+  bank.forEach(q => {
+    if (!byType[q.type]) byType[q.type] = [];
+    byType[q.type].push(q);
+  });
+  // Pick 10 from each type (shuffled), then shuffle the combined 100
+  const selected = Object.values(byType)
+    .flatMap(qs => shuffleArray(qs).slice(0, 10));
+  return shuffleArray(selected);
+}
+
+9.2 MCQ Distractor Generation (utils/scoring.js)
+
+export function generateDistractors(correct, min = 0, max = 40, count = 3) {
+  const distractors = new Set();
+  // Strategy: offsets of ±1, ±2, ±3 — plausible wrong group counts
+  const offsets = [-3, -2, -1, 1, 2, 3];
+  shuffleArray(offsets).forEach(offset => {
+    const d = correct + offset;
+    if (d >= min && d <= max && d !== correct && distractors.size < count)
+      distractors.add(d);
+  });
+  // Ensure always 4 options
+  while (distractors.size < count) {
+    const d = correct + (distractors.size + 1);
+    if (d <= max && d !== correct) distractors.add(d);
+  }
+  return shuffleArray([correct, ...distractors]);
+}
+
+9.3 Session Persistence (24-hour resume)
+
+const SESSION_KEY = 'intellia_eq_groups_v1';
+
+// On app mount: restore if within 24 hours
+const saved = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null');
+if (saved && Date.now() - saved.timestamp < 86400000) {
+  dispatch({ type: ACTIONS.RESTORE_SESSION, payload: saved });
+}
+
+// On every state change: persist progress
+useEffect(() => {
+  localStorage.setItem(SESSION_KEY, JSON.stringify({
+    phase: state.phase,
+    storyPanel: state.storyPanel,
+    simStationsComplete: state.simStationsComplete,
+    currentQuestion: state.currentQuestion,
+    xp: state.xp,
+    streak: state.streak,
+    maxStreak: state.maxStreak,
+    badges: state.badges,
+    worldScores: state.worldScores,
+    phaseComplete: state.phaseComplete,
+    timestamp: Date.now(),
+  }));
+}, [state]);
+
+═══════════════════════════════════════════════════════════════════════════════
+
+10. GAMIFICATION IMPLEMENTATION
+
+10.1 XP Calculation (utils/scoring.js)
+
+export function calcXP(attemptNumber, hintsUsed, streak) {
+  const base = attemptNumber === 1 ? 10 : hintsUsed > 0 ? 5 : 7;
+  const streakBonus = streak >= 5 ? 5 : 0;
+  return base + streakBonus;
+}
+
+10.2 Star Rating (per world of 10 questions)
+
+export function calcStars(correct, total = 10) {
+  if (correct >= 9) return 3;    // Gold: ≥90%
+  if (correct >= 7) return 2;    // Silver: ≥70%
+  if (correct >= 5) return 1;    // Bronze: ≥50% (world unlock gate)
+  return 0;                       // Try again
+}
+
+export function canUnlockWorld(worldScore) {
+  return worldScore !== null && worldScore >= 5;
+}
+
+export function calcTotalStars(worldScores) {
+  return worldScores.reduce((sum, ws) => sum + (ws !== null ? calcStars(ws) : 0), 0);
+}
+
+10.3 Badge Engine (utils/badgeEngine.js)
+
+export const BADGES = [
+  {
+    id: 'group_explorer',
+    label: '🏅 Group Explorer',
+    description: 'Complete Wonder and Story phases',
+    condition: (s) => s.phaseComplete.wonder && s.phaseComplete.story,
+  },
+  {
+    id: 'group_builder',
+    label: '🥈 Group Builder',
+    description: 'Complete all 3 Simulation stations',
+    condition: (s) => s.simStationsComplete.every(Boolean),
+  },
+  {
+    id: 'equal_champion',
+    label: '🥇 Equal Champion',
+    description: 'Score 80%+ in Play phase',
+    condition: (s) => {
+      const totalCorrect = s.worldScores.reduce((sum, ws) => sum + (ws || 0), 0);
+      return totalCorrect >= 80;
+    },
+  },
+  {
+    id: 'perfect_groups',
+    label: '💎 Perfect Groups',
+    description: 'Score 10/10 in any world',
+    condition: (s) => s.worldScores.some(ws => ws === 10),
+  },
+  {
+    id: 'streak_star',
+    label: '🔥 Streak Star',
+    description: 'Achieve a streak of 10 consecutive correct answers',
+    condition: (s) => s.maxStreak >= 10,
+  },
+  {
+    id: 'full_journey',
+    label: '🌟 Full Journey',
+    description: 'Complete all 5 phases',
+    condition: (s) => Object.values(s.phaseComplete).every(Boolean),
+  },
+  {
+    id: 'sharp_eye',
+    label: '🎯 Sharp Eye',
+    description: 'Complete Station B without any wrong selection',
+    condition: (s) => s.stationBPerfect === true,
+  },
+  {
+    id: 'fair_sharer',
+    label: '🤝 Fair Sharer',
+    description: 'Answer 5 fair-sharing word problems correctly',
+    condition: (s) => (s.fairSharingCorrect || 0) >= 5,
+  },
+];
+
+export function checkBadges(state) {
+  return BADGES
+    .filter(b => !state.badges.includes(b.id) && b.condition(state))
+    .map(b => b.id);
+}
+
+// Call after every state update that could unlock a badge:
+const newBadges = checkBadges(newState);
+if (newBadges.length > 0) {
+  dispatch({ type: ACTIONS.UNLOCK_BADGE, payload: newBadges });
+  newBadges.forEach(id => {
+    const badge = BADGES.find(b => b.id === id);
+    narrate([{ text: badge.description, style: 'celebration' }], apiKey);
+  });
+}
+
+═══════════════════════════════════════════════════════════════════════════════
+
+11. CSS ANIMATION KEYFRAMES (matching numberbound.vercel.app style)
+
+@keyframes bounceIn {
+  0%   { transform: scale(0.3); opacity: 0; }
+  50%  { transform: scale(1.05); opacity: 1; }
+  70%  { transform: scale(0.9); }
+  100% { transform: scale(1); }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%       { transform: translateX(-8px); }
+  40%       { transform: translateX(8px); }
+  60%       { transform: translateX(-6px); }
+  80%       { transform: translateX(6px); }
+}
+
+@keyframes floatUp {
+  0%   { transform: translateY(0) scale(1); opacity: 1; }
+  100% { transform: translateY(-60px) scale(1.5); opacity: 0; }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(74, 144, 217, 0.4); }
+  50%       { box-shadow: 0 0 0 12px rgba(74, 144, 217, 0); }
+}
+
+@keyframes celebrate {
+  0%   { transform: rotate(-5deg) scale(1); }
+  25%  { transform: rotate(5deg) scale(1.1); }
+  50%  { transform: rotate(-3deg) scale(1.05); }
+  75%  { transform: rotate(3deg) scale(1.1); }
+  100% { transform: rotate(0deg) scale(1); }
+}
+
+@keyframes slideInUp {
+  from { transform: translateY(30px); opacity: 0; }
+  to   { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes dotCountUp {
+  /* Applied to each emoji dot with staggered delay */
+  from { transform: scale(0); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+
+@keyframes groupCirclePop {
+  0%   { transform: scale(0.5); opacity: 0; }
+  60%  { transform: scale(1.08); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* Stagger: each group circle/dot gets animation-delay: (index * 120ms) */
+
+═══════════════════════════════════════════════════════════════════════════════
+
+12. COMPONENT PROP CONTRACTS
+
+EqualGroupDiagram
+  Props:   { numGroups, groupSize, missingSlot?, objectEmoji?, animated?, size? }
+  Returns: SVG element (inline, responsive)
+
+GroupCircle
+  Props:   { index, count, targetCount, onDrop, highlighted? }
+  Returns: Droppable div with count badge overlay
+
+ObjectPool
+  Props:   { objects, onDragStart, onTap }
+  Returns: Flex row of draggable/tappable emoji spans
+
+NumberPad
+  Props:   { max, value, onChange, onSubmit }
+  Returns: Grid of digit buttons (min 44×44px), backspace, submit
+
+Mascot
+  Props:   { mood: 'idle'|'happy'|'thinking'|'celebrating'|'encouraging' }
+  Returns: img/svg + CSS animation class mapped to mood
+
+QuestionRenderer
+  Props:   { question: Question, onAnswer: (answer: any) => void, hints: number }
+  Returns: Type-specific question component
+
+FeedbackOverlay
+  Props:   { isCorrect: boolean, explanation?: string, xpEarned: number, onContinue: () => void }
+  Returns: Animated modal overlay (bounceIn correct / shake wrong)
+
+WorldMap
+  Props:   { worldScores: (number|null)[], currentWorld: number, onSelectWorld: (i) => void }
+  Returns: Horizontal scrollable world list with star ratings and lock icons
+
+BadgePanel
+  Props:   { badges: string[], newBadgeId?: string }
+  Returns: Badge grid with unlock toast animation for newBadgeId
+
+═══════════════════════════════════════════════════════════════════════════════
+
+13. PERFORMANCE REQUIREMENTS
+
+  Metric                          | Target
+  --------------------------------|------------------
+  Initial load time               | < 2 seconds (Vite production build)
+  Time to first meaningful paint  | < 1 second
+  SVG animation frame rate        | 60 fps
+  Memory usage                    | < 60 MB
+  Bundle size (gzipped)           | < 600 KB
+  Lighthouse Performance score    | ≥ 90
+  Lighthouse Accessibility score  | ≥ 90
+  ElevenLabs pre-gen audio TTFB   | 0ms (static .mp3 assets)
+  ElevenLabs dynamic audio TTFB   | < 2 seconds (API latency)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+14. BROWSER & DEVICE SUPPORT
+
+  Environment              | Support Level
+  -------------------------|----------------
+  Chrome 110+ (desktop)    | Full
+  Safari 15+ (iPad)        | Full — primary classroom device
+  Firefox 110+             | Full
+  Edge 110+                | Full
+  Android Chrome           | Full
+  iOS Safari 15+           | Full
+  IE 11                    | Not supported
+
+Primary test device: iPad (768px, touch) — classroom use context
+Secondary:           Desktop Chrome (1280px+)
+Tertiary:            iPhone (375px — stacked layout)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+15. WORDPRESS EMBEDDING (Intellia SG)
+
+Option A — React CDN Bundle (preferred)
+  <!-- In WordPress Custom HTML block at lesson page -->
+  <div id="equal-groups-app"></div>
+  <script src="https://cdn.intelliasg.com/lessons/equal-groups.js"></script>
+
+Option B — iframe Embed
+  <iframe
+    src="https://lessons.intelliasg.com/grade1/equal-groups"
+    width="100%"
+    height="780px"
+    frameborder="0"
+    allow="autoplay; microphone"
+    style="border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.12);"
+  ></iframe>
+
+Dimensions: 100% width, 780px height (scrollable internally on mobile).
+Page layout must match the Intellia SG lesson page structure exactly.
+
+═══════════════════════════════════════════════════════════════════════════════
+
+16. QUALITY ASSURANCE CHECKLIST
+
+  Category        | Test Case                                               | Status
+  ----------------|---------------------------------------------------------|-------
+  Audio           | Pre-generated .mp3 plays for all phase narration        | TBD
+  Audio           | Dynamic ElevenLabs generation works with API key        | TBD
+  Audio           | Silent skip (no crash) when API key absent              | TBD
+  Audio           | Segment preloading eliminates gaps between sentences    | TBD
+  Audio           | No audio plays when audioEnabled=false                  | TBD
+  Questions       | All 100 questions render without error                  | TBD
+  Questions       | MCQ always includes correct answer in options           | TBD
+  Questions       | No duplicate options in any MCQ question                | TBD
+  Questions       | Randomisation produces unique order each session        | TBD
+  Questions       | All 10 question types appear in every session           | TBD
+  Simulations     | Station A: drag placement works (touch + mouse)         | TBD
+  Simulations     | Station A: tap fallback works on touch-only devices     | TBD
+  Simulations     | Station A: equal check triggers correct feedback        | TBD
+  Simulations     | Station B: equal card identification works all rounds   | TBD
+  Simulations     | Station C: number pad submits and evaluates correctly   | TBD
+  Simulations     | EqualGroupDiagram SVG renders for 2–9 groups of 2–9    | TBD
+  Phases          | All 5 phases navigate end-to-end without error          | TBD
+  Phases          | Phase cannot be skipped (gate logic enforced)           | TBD
+  Gamification    | XP increments correctly (10/7/5 + streak bonus)        | TBD
+  Gamification    | Star rating correct (0/1/2/3 per world)                | TBD
+  Gamification    | All 8 badges unlock at exactly the correct conditions   | TBD
+  Gamification    | Streak resets to 0 on wrong answer                     | TBD
+  Gamification    | World unlock gate (≥5/10 required)                     | TBD
+  Gamification    | Badge audio plays on unlock                            | TBD
+  Persistence     | localStorage saves all state correctly                  | TBD
+  Persistence     | Restored session resumes at correct phase/question      | TBD
+  Persistence     | Session expires and resets after 24 hours              | TBD
+  Persistence     | "New Game" clears storage and re-randomises questions   | TBD
+  Responsive      | Layout correct on 768px tablet (primary target)        | TBD
+  Responsive      | Layout correct on 375px mobile (stacked)               | TBD
+  Responsive      | Layout correct on 1280px desktop                       | TBD
+  Accessibility   | All tap targets ≥ 44×44px                              | TBD
+  Accessibility   | WCAG AA colour contrast on all text                    | TBD
+  Accessibility   | Keyboard navigation functional (Tab + Enter)           | TBD
+  Accessibility   | Drag fallback available for all drag interactions       | TBD
+  Performance     | Lighthouse Performance ≥ 90                            | TBD
+  Performance     | Bundle < 600KB gzipped (Vite build)                   | TBD
+  Performance     | Animations run at 60fps on iPad                        | TBD
+  Curriculum      | All MOE LO1–LO7 covered across phases + questions      | TBD
+  Curriculum      | MOE vocabulary used correctly in all question text      | TBD
+  Curriculum      | Word problem format matches MOE Targeting Maths style   | TBD
+
+═══════════════════════════════════════════════════════════════════════════════
+
+17. AUDIO FILE MANAGEMENT WORKFLOW
+
+Step | Action
+-----|------------------------------------------------------------------------
+1    | Add phrase to scripts/generate_audio.js phrases array
+2    | Run: node scripts/generate_audio.js (hits ElevenLabs API, saves .mp3)
+3    | Verify .mp3 playback quality matches intended speech style
+4    | Auto-generated audioMap.js is updated (maps text → /assets/audio/*.mp3)
+5    | Update matching text in React UI component (exact text match required)
+6    | Update matching text in src/utils/narration.js (1:1 parity rule)
+7    | Optional: node scripts/clean_audio.js (remove orphaned .mp3 files)
+8    | Commit updated audioMap.js + .mp3 files + component changes together
+
+═══════════════════════════════════════════════════════════════════════════════
+
+18. DEPLOYMENT PIPELINE
+
+  Step | Action
+  -----|--------------------------------------------------------------------
+  1    | npm install (Vite + React 18 + ElevenLabs dependencies)
+  2    | node scripts/generate_audio.js (pre-generate all phase .mp3 files)
+  3    | npm run build (Vite production bundle)
+  4    | Upload dist/ to CDN or Vercel (preview deploy)
+  5    | QA pass on preview URL (full checklist above, §16)
+  6    | Embed into WordPress via Option A or B (§15)
+  7    | Final QA on intelliasg.com/courses/grade-1-math/lessons/equal-groups/
+  8    | Set lesson status = Live in LearnPress LMS
+  9    | Verify ElevenLabs API key is set in production environment
+
+═══════════════════════════════════════════════════════════════════════════════
+
+Document Version:    1.0 | May 2026
+Product:             Intellia SG — Grade 1 Math, Lesson 4.1
+Lesson Title:        Equal Groups — Introduction to Multiplication and Division
+Curriculum:          Singapore MOE Primary 1 Mathematics
+Reference UI:        https://numberbound.vercel.app/
+Reference Repo:      https://github.com/dsamyak/numberbound
+Audio Pipeline:      ElevenLabs — Voice: Alice (Xb7hH8MSUJpSbSDYk0k2), eleven_multilingual_v2
+Technical Lead:      Intellia Engineering Team
+Curriculum Refs:     Targeting Mathematics Primary 1B (Casco Publications)
+                     My Pals Are Here! Maths Primary 1B (Marshall Cavendish)
+                     Singapore MOE Primary 1–6 Mathematics Syllabus (2013, Revised)
+Parent Course Page:  https://intelliasg.com/courses/grade-1-math/
+Lesson URL:          https://intelliasg.com/courses/grade-1-math/lessons/equal-groups/

@@ -1,0 +1,10 @@
+node_modules
+dist
+.env.local
+*.local
+.vercel
+node_modules/
+.env
+**/.env
+place_value_module/
+equal_ref/
